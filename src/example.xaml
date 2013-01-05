@@ -1,0 +1,27 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        
+        <ListView Grid.Column="0" ItemsSource="{Binding items}" SelectedItem="{Binding selected_item}" DisplayMemberPath="name" />
+        
+        <StackPanel Grid.Column="1" Orientation="Vertical">
+            <Button Content="Rename item" Command="{Binding rename_item_command}" CommandParameter="{Binding Text, ElementName=NameInputField}" />
+            
+            <TextBox x:Name="NameInputField" Text="{Binding selected_item.name, Mode=OneWay}" />
+            
+            <Button Content="Delete item" Command="{Binding delete_item_command}" />
+            <Button Content="Add item" Command="{Binding add_item_command}" />
+            
+            <Button Content="Sort items" Command="{Binding sort_items_command}" />
+            
+            <TextBlock Text="{Binding message}" />
+            <TextBlock Text="{Binding related_message}" />
+            
+            <Button Content="Click me" Click="button_clicked" />
+        </StackPanel>
+    </Grid>
+</Window>
