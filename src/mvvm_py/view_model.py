@@ -8,7 +8,7 @@ from System.ComponentModel import *
 class bindable_property(property):
     '''Creates a property that fires PropertyChanged notifications when the setter is called.'''
     
-    def __init__(self, get = None, set = None, depends_on = None, default = None):
+    def __init__(self, get = 'default', set = 'default', depends_on = None, default = None):
         # If no getter and setter method have been given, then use a private field to store the property's value in.
         # The property name is determined by ViewModelMetaClass:
         self.name = ''
@@ -24,14 +24,14 @@ class bindable_property(property):
         self._related_commands = []
         
         # Determine the most appropriate getter and setter:
-        if get is None:
+        if get == 'default':
             def getter(slf):
                 return getattr(slf, self.backing_field, default)
             #
         else:
             getter = get
         
-        if set is None:
+        if set == 'default':
             def setter(slf, value):
                 setattr(slf, self.backing_field, value)
                 
@@ -41,7 +41,7 @@ class bindable_property(property):
                 for related_command in self._related_commands:
                     getattr(slf, related_command).OnCanExecuteChanged()
             #
-        else:
+        elif set is not None:
             def setter(slf, value):
                 set(slf, value)
                 
@@ -51,6 +51,8 @@ class bindable_property(property):
                 for related_command in self._related_commands:
                     getattr(slf, related_command).OnCanExecuteChanged()
             #
+        else:
+            setter = set
         
         super(bindable_property, self).__init__(getter, setter)
     #
