@@ -12,11 +12,11 @@ from mvvm_py import *
 
 class PersonViewModel(ViewModel):
     name = bindable_property()
-    surname = bindable_property()
+    surname = bindable_property(default = '')
 ```
 
 ```bindable_property``` creates a property with a setter that calls ```OnPropertyChanged```.
-By default, the actual property values are stored in a hidden field (the name of the property with an underscore appended).
+By default, the actual property values are stored in a hidden field (the name of the property with a prefixed underscore).
 However, custom getters and setters can easily be specified:
 ```python
     def get_full_name(self):
@@ -31,9 +31,13 @@ There is no need to call ```OnPropertyChanged``` in the setter, as mvvm_py will 
 Note the last argument, ```depends_on```: when either ```name``` or ```surname``` is set,
 a change notification is raised for ```full_name``` as well. This makes it easier to manage 'derived' properties.
 
-*NOTE: currently, mvvm_py does not offer a convenient way to create read-only properties.
-Bindable properties created without specifying a setter will use a default setter instead.
-You can, of course, use a setter that raises an error.*
+To make a read-only property, simply pass in ```None``` as setter. Similarly, a property becomes write-only when passing ```None``` as getter.
+```python
+    description = bindable_property(set = None)
+```
+
+mvvm_py tries to prevent duplicate ```OnPropertyChanged``` calls.
+For example, if property A depends on B, but also sets B in it's setter, then B's setter will not raise a property changed event for A, because it knows that A's setter will do so afterwards.
 
 Commands
 --------
