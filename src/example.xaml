@@ -6,7 +6,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         
-        <ListView Grid.Column="0" ItemsSource="{Binding items}" SelectedItem="{Binding selected_item}" DisplayMemberPath="name" />
+        <ListView Grid.Column="0" ItemsSource="{Binding items}" SelectedItem="{Binding selected_item}" DisplayMemberPath="description" />
         
         <StackPanel Grid.Column="1" Orientation="Vertical">
             <Button Content="Rename item" Command="{Binding rename_item_command}" CommandParameter="{Binding Text, ElementName=NameInputField}" />
@@ -22,6 +22,12 @@
             <TextBlock Text="{Binding related_message}" />
             
             <Button Content="Click me" Click="button_clicked" />
+            
+            <TextBox Text="{Binding selected_item.name, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Text="{Binding selected_item.surname, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Text="{Binding selected_item.full_name, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Text="{Binding selected_item.age, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Text="{Binding selected_item.description, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
     </Grid>
 </Window>

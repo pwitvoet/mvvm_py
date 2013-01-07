@@ -33,23 +33,25 @@ class bindable_property(property):
         
         if set == 'default':
             def setter(slf, value):
-                setattr(slf, self.backing_field, value)
-                
-                slf.OnPropertyChanged(self.name)
-                for related_property in self._related_properties:
-                    slf.OnPropertyChanged(related_property)
-                for related_command in self._related_commands:
-                    getattr(slf, related_command).OnCanExecuteChanged()
+                try:
+                    slf._active_setters.append(self.name)
+                    setattr(slf, self.backing_field, value)
+                    
+                    slf.OnPropertyChanged(self.name)
+                    slf._handle_related_properties_and_commands(self)
+                finally:
+                    slf._active_setters.remove(self.name)
             #
         elif set is not None:
             def setter(slf, value):
-                set(slf, value)
-                
-                slf.OnPropertyChanged(self.name)
-                for related_property in self._related_properties:
-                    slf.OnPropertyChanged(related_property)
-                for related_command in self._related_commands:
-                    getattr(slf, related_command).OnCanExecuteChanged()
+                try:
+                    slf._active_setters.append(self.name)
+                    set(slf, value)
+                    
+                    slf.OnPropertyChanged(self.name)
+                    slf._handle_related_properties_and_commands(self)
+                finally:
+                    slf._active_setters.remove(self.name)
             #
         else:
             setter = set
@@ -68,8 +70,8 @@ class ViewModelMetaClass(type):
         # Find all bindable properties in the class and update their dependencies:
         # TODO: Take care of circular dependencies!!!
         bindable_properties = {}
-        related_properties = defaultdict(lambda: [])
-        related_commands = defaultdict(lambda: [])
+        all_related_properties = defaultdict(lambda: [])
+        all_related_commands = defaultdict(lambda: [])
         for attribute_name in dir(cls):
             attribute = getattr(cls, attribute_name)
             
@@ -79,21 +81,41 @@ class ViewModelMetaClass(type):
                 
                 bindable_properties[attribute_name] = attribute
                 for dependency in attribute._depends_on:
-                    related_properties[dependency].append(attribute_name)
+                    all_related_properties[dependency].append(attribute_name)
             elif isinstance(attribute, relay_command):
                 attribute.name = attribute_name
                 attribute.backing_field = '_{0}'.format(attribute_name)
                 
                 for dependency in attribute._depends_on:
-                    related_commands[dependency].append(attribute_name)
+                    all_related_commands[dependency].append(attribute_name)
         
-        for name, related_properties in related_properties.items():
+        for name, related_properties in all_related_properties.items():
+            # Circular dependencies cause stack overflows (infinite loops), so they're not allowed:
+            assert not cls._has_circular_references(all_related_properties, name), 'bindable property {!r} has a circular dependency'.format(name)
             bindable_prop = bindable_properties[name]
             bindable_prop._related_properties = related_properties
         
-        for name, related_commands in related_commands.items():
+        for name, related_commands in all_related_commands.items():
             bindable_prop = bindable_properties[name]
             bindable_prop._related_commands = related_commands
+    #
+    
+    def _has_circular_references(self, related_properties, property_name):
+        visited_properties = []
+        open_properties = [property_name]
+
+        while len(open_properties) > 0:
+            prop_name = open_properties.pop()
+            visited_properties.append(prop_name)
+
+            if prop_name in related_properties:
+                for related_property in related_properties[prop_name]:
+                    if related_property == property_name:
+                        return True
+                    elif related_property not in visited_properties and related_property not in open_properties:
+                        open_properties.append(related_property)
+
+        return False
     #
 #
 
@@ -105,6 +127,10 @@ class ViewModel(INotifyPropertyChanged):
     
     def __init__(self):
         super(ViewModel, self).__init__()
+        
+        # A list of currently active setters is maintained, so duplicate
+        # property change notifications can be avoided.
+        self._active_setters = []
     #
     
     def add_PropertyChanged(self, value):
@@ -117,5 +143,15 @@ class ViewModel(INotifyPropertyChanged):
     
     def OnPropertyChanged(self, propertyName):
         self.PropertyChanged(self, PropertyChangedEventArgs(propertyName))
+    #
+    
+    def _handle_related_properties_and_commands(self, property):
+        for related_property in property._related_properties:
+            if related_property not in self._active_setters:
+                self.OnPropertyChanged(related_property)
+                self._handle_related_properties_and_commands(getattr(type(self), related_property))
+        
+        for related_command in property._related_commands:
+            getattr(self, related_command).OnCanExecuteChanged()
     #
 #

@@ -1,5 +1,6 @@
 import clr
 import wpf
+import dis
 from mvvm_py import *
 
 clr.AddReferenceByPartialName("PresentationCore")
@@ -17,6 +18,18 @@ class Item(ViewModel):
     #
     
     name = bindable_property()
+    surname = bindable_property(default = '')
+    age = bindable_property(default = 0)
+    
+    def _get_full_name(self):
+        return '{} {}'.format(self.name, self.surname)
+    def _set_full_name(self, full_name):
+        parts = full_name.split(' ', 1)
+        self.name = '' if len(parts) < 1 else parts[0]
+        self.surname = '' if len(parts) < 2 else parts[1]
+    full_name = bindable_property(_get_full_name, _set_full_name, depends_on = ['name', 'surname'])
+    
+    description = bindable_property(lambda self: '{}, {} years old'.format(self.full_name, self.age), None, depends_on = ['full_name', 'age'])
 #
 
 class MyWindowViewModel(ViewModel):
@@ -68,8 +81,13 @@ class MyWindow(Window):
         self.DataContext = MyWindowViewModel()
         self.DataContext.items.extend([Item('A'), Item('B'), Item('C'), Item('D'), Item('E')])
         self.DataContext.selected_item = self.DataContext.items[0]
+        self.DataContext.selected_item.PropertyChanged += self.item_property_changed
         
         wpf.LoadComponent(self, 'example.xaml')
+    #
+    
+    def item_property_changed(self, sender, e):
+        print e.PropertyName
     #
     
     def button_clicked(self, sender, e):
