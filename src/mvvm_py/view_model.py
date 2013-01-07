@@ -8,7 +8,7 @@ from System.ComponentModel import *
 class bindable_property(property):
     '''Creates a property that fires PropertyChanged notifications when the setter is called.'''
     
-    def __init__(self, get = None, set = None, depends_on = None):
+    def __init__(self, get = None, set = None, depends_on = None, default = None):
         # If no getter and setter method have been given, then use a private field to store the property's value in.
         # The property name is determined by ViewModelMetaClass:
         self.name = ''
@@ -26,7 +26,7 @@ class bindable_property(property):
         # Determine the most appropriate getter and setter:
         if get is None:
             def getter(slf):
-                return getattr(slf, self.backing_field)
+                return getattr(slf, self.backing_field, default)
             #
         else:
             getter = get
