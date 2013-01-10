@@ -17,7 +17,15 @@ class PersonViewModel(ViewModel):
 
 ```bindable_property``` creates a property with a setter that calls ```OnPropertyChanged```.
 By default, the actual property values are stored in a hidden field (the name of the property with a prefixed underscore).
-However, custom getters and setters can easily be specified:
+You can also manually specify the field name:
+
+```python
+    name = bindable_property(backing_field = '_name')
+    wrapped_name = bindable_property(backing_field = 'wrapped_object.name')
+```
+
+The ability to specify properties recursively, as in ```wrapped_object.name```, is useful for quickly wrapping normal objects with a view model.
+If that is not sufficient, custom getters and setters can also be specified:
 ```python
     def get_full_name(self):
         return '{0} {1}'.format(self.name, self.surname)
