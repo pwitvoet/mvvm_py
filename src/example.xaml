@@ -28,6 +28,10 @@
             <TextBox Text="{Binding selected_item.full_name, UpdateSourceTrigger=PropertyChanged}" />
             <TextBox Text="{Binding selected_item.age, UpdateSourceTrigger=PropertyChanged}" />
             <TextBox Text="{Binding selected_item.description, UpdateSourceTrigger=PropertyChanged}" />
+            
+            <TextBox Text="{Binding selected_item.wrapped_name, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Text="{Binding selected_item.wrapped_cost, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Text="{Binding selected_item.wrapped_description, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
     </Grid>
 </Window>

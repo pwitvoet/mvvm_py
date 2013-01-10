@@ -5,14 +5,32 @@ from event import *
 from System.ComponentModel import *
 
 
+def getattribute(object, name, default = None):
+    '''Recursively gets an attribute. For example, 'name' can be 'item.subitem'.'''
+    try:
+        return reduce(lambda obj, name: getattr(obj, name), name.split('.'), object)
+    except:
+        if default is not None:
+            return default
+#
+
+def setattribute(object, name, value):
+    '''Recursively sets an attribute. For example, 'name' can be 'item.subitem'.'''
+    if '.' in name:
+        first, last = name.rsplit('.', 1)
+        setattr(getattribute(object, first), last, value)
+    else:
+        setattr(object, name, value)
+#
+
 class bindable_property(property):
     '''Creates a property that fires PropertyChanged notifications when the setter is called.'''
     
-    def __init__(self, get = 'default', set = 'default', depends_on = None, default = None):
+    def __init__(self, get = 'default', set = 'default', backing_field = None, depends_on = None, default = None):
         # If no getter and setter method have been given, then use a private field to store the property's value in.
         # The property name is determined by ViewModelMetaClass:
-        self.name = ''
-        self.backing_field = '_'
+        self.name = None
+        self.backing_field = backing_field
         
         # Some (typically read-only) properties depend on others, so when the other property changes, they change as well.
         # Changing a property should also fire a change notification for all depending properties. ViewModelMetaClass
@@ -26,7 +44,7 @@ class bindable_property(property):
         # Determine the most appropriate getter and setter:
         if get == 'default':
             def getter(slf):
-                return getattr(slf, self.backing_field, default)
+                return getattribute(slf, self.backing_field, default)
             #
         else:
             getter = get
@@ -35,7 +53,7 @@ class bindable_property(property):
             def setter(slf, value):
                 try:
                     slf._active_setters.append(self.name)
-                    setattr(slf, self.backing_field, value)
+                    setattribute(slf, self.backing_field, value)
                     
                     slf.OnPropertyChanged(self.name)
                     slf._handle_related_properties_and_commands(self)
@@ -77,7 +95,8 @@ class ViewModelMetaClass(type):
             
             if isinstance(attribute, bindable_property):
                 attribute.name = attribute_name
-                attribute.backing_field = '_{0}'.format(attribute_name)
+                if attribute.backing_field is None:
+                    attribute.backing_field = '_{0}'.format(attribute_name)
                 
                 bindable_properties[attribute_name] = attribute
                 for dependency in attribute._depends_on:

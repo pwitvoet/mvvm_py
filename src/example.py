@@ -10,11 +10,21 @@ clr.AddReferenceByPartialName("WindowsBase")
 from System.Windows import Application, Window
 
 
+class NormalItem(object):
+    def __init__(self, name, cost):
+        super(NormalItem, self).__init__()
+        
+        self.name = ''
+        self.cost = 0
+    #
+#
+
 class Item(ViewModel):
     def __init__(self, name):
         super(Item, self).__init__()
         
         self.name = name
+        self.wrapped_item = NormalItem('[' + self.name + ']', 0)
     #
     
     name = bindable_property()
@@ -30,6 +40,11 @@ class Item(ViewModel):
     full_name = bindable_property(_get_full_name, _set_full_name, depends_on = ['name', 'surname'])
     
     description = bindable_property(lambda self: '{}, {} years old'.format(self.full_name, self.age), None, depends_on = ['full_name', 'age'])
+    
+    wrapped_name = bindable_property(backing_field = 'wrapped_item.name')
+    wrapped_cost = bindable_property(backing_field = 'wrapped_item.cost')
+    
+    wrapped_description = bindable_property(lambda self: '{} {}'.format(self.wrapped_name, self.wrapped_cost), None, depends_on = ['wrapped_name', 'wrapped_cost'])
 #
 
 class MyWindowViewModel(ViewModel):
@@ -81,13 +96,8 @@ class MyWindow(Window):
         self.DataContext = MyWindowViewModel()
         self.DataContext.items.extend([Item('A'), Item('B'), Item('C'), Item('D'), Item('E')])
         self.DataContext.selected_item = self.DataContext.items[0]
-        self.DataContext.selected_item.PropertyChanged += self.item_property_changed
         
         wpf.LoadComponent(self, 'example.xaml')
-    #
-    
-    def item_property_changed(self, sender, e):
-        print e.PropertyName
     #
     
     def button_clicked(self, sender, e):
